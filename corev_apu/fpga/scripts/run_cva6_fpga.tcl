@@ -94,6 +94,10 @@ if { $::env(PS7_DDR) == 1 } {
 
 set_property STEPS.SYNTH_DESIGN.ARGS.RETIMING true [get_runs synth_1]
 
+## directived PerformanceOptimized 
+set_property "steps.synth_design.args.directive" "PerformanceOptimized" [get_runs synth_1]
+
+
 launch_runs synth_1
 wait_on_run synth_1
 open_run synth_1
@@ -109,9 +113,13 @@ report_utilization -hierarchical                                        -file re
 report_cdc                                                              -file reports_cva6_fpga_synth/$project.cdc.rpt
 report_clock_interaction                                                -file reports_cva6_fpga_synth/$project.clock_interaction.rpt
 
-# set for RuntimeOptimized implementation
-set_property "steps.place_design.args.directive" "RuntimeOptimized" [get_runs impl_1]
-set_property "steps.route_design.args.directive" "RuntimeOptimized" [get_runs impl_1]
+# #set for RuntimeOptimized implementation
+# set_property "steps.place_design.args.directive" "RuntimeOptimized" [get_runs impl_1]
+# set_property "steps.route_design.args.directive" "RuntimeOptimized" [get_runs impl_1]
+
+#set for ExtraTimingOpt implementation
+set_property "steps.place_design.args.directive" "ExtraTimingOpt" [get_runs impl_1]
+set_property "steps.route_design.args.directive" "AggressiveExplore" [get_runs impl_1]
 
 ##create_clock -period $::env(CLK_PERIOD_NS) -name clk_i   [get_ports clk_i]
 
