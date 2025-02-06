@@ -204,14 +204,16 @@ module perf_counters
       endcase
     end
   end
-
+   logic [63:0] generic_counter_buffer[6:1];
   //Registers
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
       generic_counter_q <= '{default: 0};
       mhpmevent_q       <= '{default: 0};
+      generic_counter_buffer <= '{default: 0};
     end else begin
       generic_counter_q <= generic_counter_d;
+      //generic_counter_buffer <= generic_counter_d;
       mhpmevent_q       <= mhpmevent_d;
     end
   end

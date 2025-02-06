@@ -40,6 +40,7 @@ module load_unit
     output logic [riscv::VLEN-1:0] vaddr_o,  // virtual address out
     input logic [riscv::PLEN-1:0] paddr_i,  // physical address in
     input  exception_t               ex_i,                // exception which may has happened earlier. for example: mis-aligned exception
+    
     input logic dtlb_hit_i,  // hit on the dtlb, send in the same cycle as the request
     input  logic [riscv::PPNW-1:0]   dtlb_ppn_i,          // ppn on the dtlb, send in the same cycle as the request
     // address checker
@@ -47,25 +48,59 @@ module load_unit
     input logic page_offset_matches_i,
     input logic store_buffer_empty_i,  // the entire store-buffer is empty
     input logic [TRANS_ID_BITS-1:0] commit_tran_id_i,
-    // D$ interface
+      // D$ interface
     input dcache_req_o_t req_port_i,
     output dcache_req_i_t req_port_o,
     input logic dcache_wbuffer_not_ni_i
-);
-  enum logic [3:0] {
-    IDLE,
-    WAIT_GNT,
-    SEND_TAG,
-    WAIT_PAGE_OFFSET,
-    ABORT_TRANSACTION,
-    ABORT_TRANSACTION_NI,
-    WAIT_TRANSLATION,
-    WAIT_FLUSH,
-    WAIT_WB_EMPTY
-  }
-      state_d, state_q;
+    );
 
-  // in order to decouple the response interface from the request interface,
+    /*logic pop_ld_o;
+    logic valid_o;
+    logic [TRANS_ID_BITS-1:0] trans_id_o;
+    riscv::xlen_t result_o;
+    exception_t ex_o;*/
+    //logic translation_req_o;
+    //logic [riscv::VLEN-1:0] vaddr_o;
+    //logic [11:0] page_offset_o;
+    //dcache_req_i_t req_port_o;
+
+
+    /*always_ff @(posedge(clk_i)) begin
+      
+      pop_ld_o <= pop_ld_o;
+      valid_o <= valid_o;
+      trans_id_o <= trans_id_o;
+      result_o <= result_o;
+      ex_o <= ex_o;
+      //translation_req_o <= translation_req_o;
+      //vaddr_o <= vaddr_o;
+      //page_offset_o <= page_offset_o;
+      //req_port_o <= req_port_o;
+
+    end*/
+
+
+    exception_t ex_o_buf;
+    exception_t ex_o_buf2;
+    always_ff @(posedge clk_i) begin
+      ex_o <= ex_o_buf2;
+      ex_o_buf2 <= ex_o_buf;
+    end
+
+    enum logic [3:0] {
+      IDLE,
+      WAIT_GNT,
+      SEND_TAG,
+      WAIT_PAGE_OFFSET,
+      ABORT_TRANSACTION,
+      ABORT_TRANSACTION_NI,
+      WAIT_TRANSLATION,
+      WAIT_FLUSH,
+      WAIT_WB_EMPTY
+    }
+        state_d, state_q;
+        
+        // in order to decouple the response interface from the request interface,
   // we need a a buffer which can hold all inflight memory load requests
   typedef struct packed {
     logic [TRANS_ID_BITS-1:0]           trans_id;        // scoreboard identifier
@@ -73,22 +108,22 @@ module load_unit
     fu_op                               operation;       // type of load
   } ldbuf_t;
 
-
+  
   // to support a throughput of one load per cycle, if the number of entries
   // of the load buffer is 1, implement a fall-through mode. This however
   // adds a combinational path between the request and response interfaces
   // towards the cache.
   localparam logic LDBUF_FALLTHROUGH = (CVA6Cfg.NrLoadBufEntries == 1);
   localparam int unsigned REQ_ID_BITS = CVA6Cfg.NrLoadBufEntries > 1 ? $clog2(
-      CVA6Cfg.NrLoadBufEntries
-  ) : 1;
-
-  typedef logic [REQ_ID_BITS-1:0] ldbuf_id_t;
-
-  logic [CVA6Cfg.NrLoadBufEntries-1:0] ldbuf_valid_q, ldbuf_valid_d;
-  logic [CVA6Cfg.NrLoadBufEntries-1:0] ldbuf_flushed_q, ldbuf_flushed_d;
-  ldbuf_t [CVA6Cfg.NrLoadBufEntries-1:0] ldbuf_q;
-  logic ldbuf_empty, ldbuf_full;
+    CVA6Cfg.NrLoadBufEntries
+    ) : 1;
+    
+    typedef logic [REQ_ID_BITS-1:0] ldbuf_id_t;
+    
+    logic [CVA6Cfg.NrLoadBufEntries-1:0] ldbuf_valid_q, ldbuf_valid_d;
+    logic [CVA6Cfg.NrLoadBufEntries-1:0] ldbuf_flushed_q, ldbuf_flushed_d;
+    ldbuf_t [CVA6Cfg.NrLoadBufEntries-1:0] ldbuf_q;
+    logic ldbuf_empty, ldbuf_full;
   ldbuf_id_t ldbuf_free_index;
   logic      ldbuf_w;
   ldbuf_t    ldbuf_wdata;
@@ -97,6 +132,9 @@ module load_unit
   ldbuf_t    ldbuf_rdata;
   ldbuf_id_t ldbuf_rindex;
   ldbuf_id_t ldbuf_last_id_q;
+  
+  logic ex_i_valid_buf;
+  exception_t ex_i_buf;
 
   assign ldbuf_full = &ldbuf_valid_q;
 
@@ -178,8 +216,15 @@ module load_unit
   // request id = index of the load buffer's entry
   assign req_port_o.data_id = ldbuf_windex;
   // directly forward exception fields (valid bit is set below)
-  assign ex_o.cause = ex_i.cause;
-  assign ex_o.tval = ex_i.tval;
+  // Assign buffered values
+  
+  
+  /*always_ff @(posedge(clk_i)) begin
+    ex_i_valid_buf <= ex_i.valid;
+    ex_i_buf <= ex_i;
+  end*/
+  assign ex_o_buf.cause = ex_i.cause;
+  assign ex_o_buf.tval = ex_i.tval;
 
   // Check that NI operations follow the necessary conditions
   logic paddr_ni;
@@ -387,7 +432,7 @@ module load_unit
     ldbuf_r    = req_port_i.data_rvalid;
     trans_id_o = ldbuf_q[ldbuf_rindex].trans_id;
     valid_o    = 1'b0;
-    ex_o.valid = 1'b0;
+    ex_o_buf.valid = 1'b0;
 
     // we got an rvalid and it's corresponding request was not flushed
     if (req_port_i.data_rvalid && !ldbuf_flushed_q[ldbuf_rindex]) begin
@@ -398,7 +443,7 @@ module load_unit
       // corresponds to the next request that is already being translated (see below).
       if (ex_i.valid && (state_q == SEND_TAG)) begin
         valid_o    = 1'b1;
-        ex_o.valid = 1'b1;
+        ex_o_buf.valid = 1'b1;
       end
     end
 
@@ -409,7 +454,7 @@ module load_unit
     if ((state_q == WAIT_TRANSLATION) && !req_port_i.data_rvalid && ex_i.valid && valid_i) begin
       trans_id_o = lsu_ctrl_i.trans_id;
       valid_o = 1'b1;
-      ex_o.valid = 1'b1;
+      ex_o_buf.valid = 1'b1;
     end
   end
 
