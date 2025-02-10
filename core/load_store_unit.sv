@@ -120,6 +120,7 @@ module load_store_unit
   logic [riscv::VLEN-1:0] mmu_vaddr;
   logic [riscv::PLEN-1:0] mmu_paddr, mmu_vaddr_plen, fetch_vaddr_plen;
   exception_t                       mmu_exception;
+  exception_t                       mmu_exception_buff;
   logic                             dtlb_hit;
   logic         [  riscv::PPNW-1:0] dtlb_ppn;
 
@@ -198,6 +199,8 @@ module load_store_unit
         .pmpaddr_i,
         .*
     );
+
+  
   end else begin : gen_no_mmu
 
     if (riscv::VLEN > riscv::PLEN) begin
@@ -236,10 +239,18 @@ module load_store_unit
         mmu_paddr         <= mmu_vaddr_plen;
         translation_valid <= translation_req;
         mmu_exception     <= misaligned_exception;
-      end
+      end 
     end
   end
-
+  shift_reg #(
+        .dtype(logic [$bits(mmu_exception) - 1:0]),
+        .Depth(1)
+    ) i_pipe_reg_mmu_exception (
+        .clk_i,
+        .rst_ni,
+        .d_i({mmu_exception}),
+        .d_o({mmu_exception_buff})
+    );
 
   logic store_buffer_empty;
   // ------------------
@@ -271,7 +282,7 @@ module load_store_unit
       .vaddr_o              (st_vaddr),
       .mem_paddr_o          (mem_paddr_o),
       .paddr_i              (mmu_paddr),
-      .ex_i                 (mmu_exception),
+      .ex_i                 (mmu_exception_buff),
       .dtlb_hit_i           (dtlb_hit),
       // Load Unit
       .page_offset_i        (page_offset),
@@ -302,7 +313,7 @@ module load_store_unit
       .translation_req_o    (ld_translation_req),
       .vaddr_o              (ld_vaddr),
       .paddr_i              (mmu_paddr),
-      .ex_i                 (mmu_exception),
+      .ex_i                 (mmu_exception_buff),
       .dtlb_hit_i           (dtlb_hit),
       .dtlb_ppn_i           (dtlb_ppn),
       // to store unit
