@@ -84,7 +84,7 @@ VL_INC_DIR := $(VERILATOR_INSTALL_DIR)/share/verilator/include
 # board name for bitstream generation.
 BOARD          := zybo-z7-20
 XILINX_PART    := xc7z020clg400-1
-XILINX_BOARD   := digilentinc.com:zybo-z7-20:part0:1.2
+XILINX_BOARD   := digilentinc.com:zybo-z7-20:part0:1.1
 CLK_PERIOD_NS  := 25
 BATCH_MODE ?= 1
 
@@ -678,7 +678,7 @@ program_cva6_fpga:
 	
 
 build-spike:
-	cd tb/riscv-isa-sim && mkdir -p build && cd build && ../configure --prefix=`pwd`/../install --with-fesvr=$(RISCV) --enable-commitlog && make -j8 install
+	cd tb/riscv-isa-sim && mkdir -p build && cd build && ../configure --prefix=`pwd`/../install --with-fesvr=$(RISCV) --enable-commitlog && make -j 16 install
 
 clean:
 	rm -rf $(riscv-torture-dir)/output/test*

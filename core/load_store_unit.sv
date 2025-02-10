@@ -227,7 +227,17 @@ module load_store_unit
     assign dtlb_ppn                            = mmu_vaddr_plen[riscv::PLEN-1:12];
     assign dtlb_hit                            = 1'b1;
 
-    always_ff @(posedge clk_i or negedge rst_ni) begin
+    shift_reg #(
+        .dtype(logic [$bits(mmu_vaddr_plen) + $bits(translation_req) + $bits(misaligned_exception) - 1:0]),
+        .Depth(10)
+    ) i_mmu_exception_pipeline (
+        .clk_i,
+        .rst_ni,
+        .d_i({mmu_vaddr_plen, translation_req, misaligned_exception}),
+        .d_o({mmu_paddr, translation_valid, mmu_exception})
+    );
+
+    /*always_ff @(posedge clk_i or negedge rst_ni) begin
       if (~rst_ni) begin
         mmu_paddr         <= '0;
         translation_valid <= '0;
@@ -237,7 +247,7 @@ module load_store_unit
         translation_valid <= translation_req;
         mmu_exception     <= misaligned_exception;
       end
-    end
+    end*/
   end
 
 
