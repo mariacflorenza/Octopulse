@@ -384,6 +384,7 @@ module cva6
   // ----------------------------
   logic [11:0] addr_csr_perf;
   riscv::xlen_t data_csr_perf, data_perf_csr;
+  riscv::xlen_t data_csr_perf_out;
   logic                                                                we_csr_perf;
 
   logic                                                                icache_flush_ctrl_cache;
@@ -853,7 +854,7 @@ module cva6
       .icache_en_o           (icache_en_csr),
       .acc_cons_en_o         (acc_cons_en_csr),
       .perf_addr_o           (addr_csr_perf),
-      .perf_data_o           (data_csr_perf),
+      .perf_data_o           (data_csr_perf_out),
       .perf_data_i           (data_perf_csr),
       .perf_we_o             (we_csr_perf),
       .pmpcfg_o              (pmpcfg),
@@ -1390,5 +1391,17 @@ module cva6
       end
     end
   end
+
+
+    shift_reg #(
+        .dtype(logic [$bits(data_csr_perf_out) - 1:0]),
+        .Depth(1)
+    ) data_perf_reg (
+        .clk_i,
+        .rst_ni,
+        .d_i({data_csr_perf_out}),
+        .d_o({data_csr_perf})
+    );
+
 
 endmodule  // ariane

@@ -152,10 +152,13 @@ module ex_stage
 
 
   logic current_instruction_is_sfence_vma;
+  logic current_instruction_is_sfence_vma_buf;
   // These two register store the rs1 and rs2 parameters in case of `SFENCE_VMA`
   // instruction to be used for TLB flush in the next clock cycle.
   logic [ASID_WIDTH-1:0] asid_to_be_flushed;
+  logic [ASID_WIDTH-1:0] asid_to_be_flushed_buf;
   logic [riscv::VLEN-1:0] vaddr_to_be_flushed;
+  logic [riscv::VLEN-1:0] vaddr_to_be_flushed_buf;
 
   // from ALU to branch unit
   logic alu_branch_res;  // branch comparison result
@@ -389,6 +392,7 @@ module ex_stage
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (~rst_ni) begin
       current_instruction_is_sfence_vma <= 1'b0;
+      //current_instruction_is_sfence_vma_buf <= 1'b0;
     end else begin
       if (flush_i) begin
         current_instruction_is_sfence_vma <= 1'b0;
@@ -402,12 +406,34 @@ module ex_stage
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (~rst_ni) begin
       asid_to_be_flushed  <= '0;
+      //asid_to_be_flushed_buf  <= '0;
       vaddr_to_be_flushed <= '0;
+      //vaddr_to_be_flushed_buf <= '0;
       // if the current instruction in EX_STAGE is a sfence.vma, in the next cycle no writes will happen
     end else if ((~current_instruction_is_sfence_vma) && (~((fu_data_i.operation == SFENCE_VMA) && csr_valid_i))) begin
       vaddr_to_be_flushed <= rs1_forwarding_i;
       asid_to_be_flushed  <= rs2_forwarding_i[ASID_WIDTH-1:0];
     end
   end
+/*
+  shift_reg #(
+        .dtype(logic [$bits(current_instruction_is_sfence_vma_buf) - 1:0]),
+        .Depth(1)
+  ) ins_register (
+        .clk_i,
+        .rst_ni,
+        .d_i({current_instruction_is_sfence_vma_buf}),
+        .d_o({current_instruction_is_sfence_vma})
+    );
 
+    shift_reg #(
+        .dtype(logic [$bits(vaddr_to_be_flushed_buf) + $bits(asid_to_be_flushed_buf) - 1:0]),
+        .Depth(1)
+    ) tbf_register (
+        .clk_i,
+        .rst_ni,
+        .d_i({vaddr_to_be_flushed_buf, asid_to_be_flushed_buf}),
+        .d_o({vaddr_to_be_flushed, asid_to_be_flushed})
+    );
+*/
 endmodule
