@@ -392,6 +392,8 @@ module cva6
   logic                                                                dtlb_miss_ex_perf;
   logic                                                                dcache_miss_cache_perf;
   logic                                                                icache_miss_cache_perf;
+  logic                                                                dcache_miss_cache_perf_pipe;
+  logic                                                                icache_miss_cache_perf_pipe;
   logic          [                 NumPorts-1:0][DCACHE_SET_ASSOC-1:0] miss_vld_bits;
   logic                                                                stall_issue;
   // --------------
@@ -885,8 +887,8 @@ module cva6
         .commit_instr_i(commit_instr_id_commit),
         .commit_ack_i  (commit_ack),
 
-        .l1_icache_miss_i   (icache_miss_cache_perf),
-        .l1_dcache_miss_i   (dcache_miss_cache_perf),
+        .l1_icache_miss_i   (icache_miss_cache_perf_pipe),
+        .l1_dcache_miss_i   (dcache_miss_cache_perf_pipe),
         .itlb_miss_i        (itlb_miss_ex_perf),
         .dtlb_miss_i        (dtlb_miss_ex_perf),
         .sb_full_i          (sb_full),
@@ -1395,12 +1397,22 @@ module cva6
 
     shift_reg #(
         .dtype(logic [$bits(data_csr_perf_out) - 1:0]),
-        .Depth(1)
+        .Depth(2)
     ) data_perf_reg (
         .clk_i,
         .rst_ni,
         .d_i({data_csr_perf_out}),
         .d_o({data_csr_perf})
+    );
+
+    shift_reg #(
+        .dtype(logic [$bits(icache_miss_cache_perf) + $bits(dcache_miss_cache_perf)- 1:0]),
+        .Depth(2)
+    ) cache_miss_register (
+        .clk_i,
+        .rst_ni,
+        .d_i({icache_miss_cache_perf, dcache_miss_cache_perf}),
+        .d_o({icache_miss_cache_perf_pipe, dcache_miss_cache_perf_pipe})
     );
 
 
