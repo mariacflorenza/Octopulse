@@ -103,7 +103,7 @@ module multiplier
   end
 
 
-  // single stage version
+  // compute result in buffered variable
   assign mult_result_d = $signed(
       {operand_a_i[riscv::XLEN-1] & sign_a, operand_a_i}
   ) * $signed(

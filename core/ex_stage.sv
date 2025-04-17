@@ -168,6 +168,8 @@ module ex_stage
   logic [TRANS_ID_BITS-1:0] mult_trans_id;
   logic mult_valid;
 
+  logic alu_valid;
+
   // 1. ALU (combinatorial)
   // data silence operation
   fu_data_t alu_data;
@@ -180,6 +182,8 @@ module ex_stage
       .rst_ni,
       .fu_data_i       (alu_data),
       .result_o        (alu_result),
+      .alu_valid_i     (alu_valid_i),
+      .alu_valid_o     (alu_valid),
       .alu_branch_res_o(alu_branch_res)
   );
 
@@ -221,7 +225,7 @@ module ex_stage
       .csr_addr_o
   );
 
-  assign flu_valid_o = alu_valid_i | branch_valid_i | csr_valid_i | mult_valid;
+  assign flu_valid_o = alu_valid | branch_valid_i | csr_valid_i | mult_valid;
 
   // result MUX
   always_comb begin
@@ -229,7 +233,7 @@ module ex_stage
     flu_result_o   = {{riscv::XLEN - riscv::VLEN{1'b0}}, branch_result};
     flu_trans_id_o = fu_data_i.trans_id;
     // ALU result
-    if (alu_valid_i) begin
+    if (alu_valid) begin
       flu_result_o = alu_result;
       // CSR result
     end else if (csr_valid_i) begin
