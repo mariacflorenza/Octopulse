@@ -116,7 +116,7 @@ module alu
   assign adder_result       = adder_result_ext_o[riscv::XLEN:1];
   assign adder_z_flag       = ~|adder_result;
 
-  assign alu_valid = alu_valid_i && (fu_data_i inside {ANDL, ANDN, ORL, ORN, XORL, XNOR, ADD, SUB, ADDUW, SH1ADD, SH2ADD, SH3ADD, SH1ADDUW, SH2ADDUW, SH3ADDUW, ADDW, SUBW, SLL, SRL, SRA, SLLW, SRLW, SRAW, SLTS, SLTU, SLLIUW, MAX, MAXU, MIN, MINU, BCLR, BCLRI, BEXT, BEXTI, BINV, BINVI, BSET, BSETI, CLZ, CTZ, CPOP, CPOPW, SEXTB, SEXTH, ZEXTH, ROL, ROLW, ROR, RORI, RORW, RORIW, ORCB, REV8, CZERO_EQZ, CZERO_NEZ});
+  assign alu_valid = alu_valid_i && (fu_data_i.operation inside {ANDL, ANDN, ORL, ORN, XORL, XNOR, ADD, SUB, ADDUW, SH1ADD, SH2ADD, SH3ADD, SH1ADDUW, SH2ADDUW, SH3ADDUW, ADDW, SUBW, SLL, SRL, SRA, SLLW, SRLW, SRAW, SLTS, SLTU, SLLIUW, MAX, MAXU, MIN, MINU, BCLR, BCLRI, BEXT, BEXTI, BINV, BINVI, BSET, BSETI, CLZ, CTZ, CPOP, CPOPW, SEXTB, SEXTH, ZEXTH, ROL, ROLW, ROR, RORI, RORW, RORIW, ORCB, REV8, CZERO_EQZ, CZERO_NEZ});
 
 
   // get the right branch comparison result
